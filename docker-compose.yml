@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  couchbase-node1:
+    image: couchbase:enterprise-7.1.1
+    container_name: couchbase-node1
+    hostname: couchbase-node1
+    ports:
+      - "8091-8094:8091-8094"
+    environment:
+      - COUCHBASE_CLUSTER_INITIALIZED=1
+      - COUCHBASE_CLUSTER_NAME=MyCluster
+      - COUCHBASE_ADMINISTRATOR_USERNAME=admin
+      - COUCHBASE_ADMINISTRATOR_PASSWORD=password
+      - COUCHBASE_SERVICES=kv,index,n1ql,fts  # Используем старые названия
+      - COUCHBASE_CLUSTER_RAMSIZE=512
+      - COUCHBASE_DISABLE_TLS=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/pools"]
+      interval: 10s
+      timeout: 20s
+      retries: 10
+    networks:
+      - couchbase-net
+
+  couchbase-node2:
+    image: couchbase:enterprise-7.1.1
+    container_name: couchbase-node2
+    hostname: couchbase-node2
+    environment:
+      - COUCHBASE_CLUSTER_INIT_HOST=couchbase-node1
+      - COUCHBASE_ADMINISTRATOR_USERNAME=admin
+      - COUCHBASE_ADMINISTRATOR_PASSWORD=password
+      - COUCHBASE_SERVICES=kv,index,n1ql,fts
+      - COUCHBASE_DISABLE_TLS=1
+    depends_on:
+      couchbase-node1:
+        condition: service_healthy
+    networks:
+      - couchbase-net
+
+  couchbase-node3:
+    image: couchbase:enterprise-7.1.1
+    container_name: couchbase-node3
+    hostname: couchbase-node3
+    environment:
+      - COUCHBASE_CLUSTER_INIT_HOST=couchbase-node1
+      - COUCHBASE_ADMINISTRATOR_USERNAME=admin
+      - COUCHBASE_ADMINISTRATOR_PASSWORD=password
+      - COUCHBASE_SERVICES=kv,index,n1ql,fts
+      - COUCHBASE_DISABLE_TLS=1
+    depends_on:
+      couchbase-node1:
+        condition: service_healthy
+    networks:
+      - couchbase-net
+
+networks:
+  couchbase-net:
+    driver: bridge
